@@ -1,2 +1,3 @@
 test-harness/harness
 test-harness/*.txt
+impl-go/src/main
