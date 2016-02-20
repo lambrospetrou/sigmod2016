@@ -33,7 +33,7 @@ type Edge struct {
 }
 
 type Vertex struct {
-	E []Edge
+	E map[int]bool
 }
 
 type Graph struct {
@@ -48,7 +48,7 @@ func buildGraph() Graph {
 
 func buildVertex() *Vertex {
 	return &Vertex{
-		E: make([]Edge, 0, 32),
+		E: make(map[int]bool),
 	}
 }
 
@@ -76,7 +76,9 @@ func addGraphEdge(G *Graph, from, to int) {
 		v = buildVertex()
 		G.V[from] = v
 	}
-	v.E = append(v.E, buildEdge(to))
+	//v.E = append(v.E, buildEdge(to))
+	//v.E[to] = buildEdge(to)
+	v.E[to] = true
 }
 
 func addGraphEdges(G *Graph, batch []Pair) {
@@ -93,12 +95,19 @@ func removeGraphEdge(G *Graph, from, to int) {
 		// no edge to delete
 		return
 	}
-
-	for _, e := range v.E {
-		if e.Valid && (e.To == to) {
-			e.Valid = false
+	/*
+		for _, e := range v.E {
+			if e.Valid && (e.To == to) {
+				e.Valid = false
+			}
 		}
-	}
+	*/
+	delete(v.E, to)
+}
+
+type Holder struct {
+	Vid   int
+	Depth int
 }
 
 func singleBFS(G *Graph, from, to int) int {
@@ -106,11 +115,7 @@ func singleBFS(G *Graph, from, to int) int {
 		return 0
 	}
 
-	type Holder struct {
-		Vid   int
-		Depth int
-	}
-	Q := make([]Holder, 0, 128)
+	Q := make([]Holder, 0, 32)
 	Qidx := 0
 	visited := make(map[int]bool)
 	visited[from] = true
@@ -122,17 +127,16 @@ func singleBFS(G *Graph, from, to int) int {
 		Qidx++
 
 		v = G.V[ch.Vid]
-		if v == nil {
-			//logln("nilllll", checkedV, v, ch)
-			continue
-		}
-		for _, e := range v.E {
-			if !visited[e.To] && e.Valid {
-				if e.To == to {
+		for k, _ := range v.E {
+			if !visited[k] {
+				if k == to {
 					return ch.Depth + 1
 				}
-				Q = append(Q, Holder{Vid: e.To, Depth: ch.Depth + 1})
-				visited[e.To] = true
+				if _, ok := G.V[k]; !ok {
+					continue
+				}
+				Q = append(Q, Holder{Vid: k, Depth: ch.Depth + 1})
+				visited[k] = true
 			}
 		}
 	}
@@ -140,7 +144,11 @@ func singleBFS(G *Graph, from, to int) int {
 }
 
 func BFS(G *Graph, from, to int) int {
+	defer timeReport(time.Now(), "Q")
 	//logln(from, to)
+	if _, ok := G.V[from]; !ok {
+		return -1
+	}
 	return singleBFS(G, from, to)
 }
 
@@ -228,6 +236,7 @@ func prepareExecutionRunner(G *Graph) (SignalChan, ExecutionBatchInput) {
 					break
 				}
 			}
+			logln("b")
 		}
 		signal <- true
 	}(signal, input)
@@ -250,19 +259,21 @@ func runExecution(r io.Reader, G *Graph) {
 	for {
 		if r, _ := fmt.Fscanf(r, "%c %d %d\n", &c, &from, &to); r < 3 {
 			if c == 'F' {
+				logln("F")
 				if len(inputBatch) > 0 {
 					batchChan <- inputBatch
 					inputBatch = make([]Operation, 0, EXECUTION_BATCH_LIMIT)
 				}
+				continue
 			} else {
 				break
 			}
 		}
 		inputBatch = append(inputBatch, Operation{C: c, From: from, To: to})
-		if len(inputBatch) == EXECUTION_BATCH_LIMIT {
+		/*if len(inputBatch) == EXECUTION_BATCH_LIMIT {
 			batchChan <- inputBatch
 			inputBatch = make([]Operation, 0, EXECUTION_BATCH_LIMIT)
-		}
+		}*/
 	}
 	close(batchChan)
 
