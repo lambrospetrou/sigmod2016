@@ -84,13 +84,6 @@ func removeGraphEdge(G *Graph, from, to int) {
 		// no edge to delete
 		return
 	}
-	/*
-		for _, e := range v.E {
-			if e.Valid && (e.To == to) {
-				e.Valid = false
-			}
-		}
-	*/
 	delete(v.E, to)
 }
 
