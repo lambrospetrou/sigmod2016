@@ -134,10 +134,8 @@ func singleBFS(G *Graph, from, to int) int {
 // biBFS does a bi-directional BFS to the graph G from source from to the target to.
 // It returns the number of edges between the two vertices or -1 if no path exists.
 func biBFS(G *Graph, from, to int) int {
-	QF := make([]int, 0, 8)
-	QT := make([]int, 0, 8)
-	QFidx := 0
-	QTidx := 0
+	QF := make([]int, 0, 64)
+	QT := make([]int, 0, 64)
 
 	visitedF := make(map[int]int)
 	visitedF[from] = 0
@@ -148,12 +146,11 @@ func biBFS(G *Graph, from, to int) int {
 	var v *Vertex
 	QF = append(QF, from)
 	QT = append(QT, to)
-	for QFidx < len(QF) && QTidx < len(QT) {
-		if len(QF)-QFidx < len(QT)-QTidx {
-			levelIdx := len(QF)
-			for ; QFidx < levelIdx; QFidx++ {
-				vid := QF[QFidx]
-
+	for len(QF) > 0 && len(QT) > 0 {
+		if len(QF) < len(QT) {
+			this_level := QF[:]
+			QF = QF[len(QF):]
+			for _, vid := range this_level {
 				depth := visitedF[vid]
 
 				v = G.V[vid]
@@ -171,10 +168,9 @@ func biBFS(G *Graph, from, to int) int {
 				}
 			}
 		} else {
-			levelIdx := len(QT)
-			for ; QTidx < levelIdx; QTidx++ {
-				vid := QT[QTidx]
-
+			this_level := QT[:]
+			QT = QT[len(QT):]
+			for _, vid := range this_level {
 				depth := visitedT[vid]
 
 				v = G.Vpred[vid]
