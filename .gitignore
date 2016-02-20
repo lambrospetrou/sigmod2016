@@ -2,3 +2,4 @@ test-harness/harness
 test-harness/*.txt
 impl-go/src/main
 impl-cpp/src/main
+*.swp
