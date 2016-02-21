@@ -22,7 +22,10 @@ template<typename T>
 using IntMap = btree::btree_map<int, T>;
 //using IntMap = std::unordered_map<int, T>;
 
-using EdgeContainer = IntMap<bool>;
+using IntSet = btree::btree_set<int>;
+
+//using EdgeContainer = IntMap<bool>;
+using EdgeContainer = IntSet;
 
 struct Vertex {
 	EdgeContainer E;
@@ -39,12 +42,12 @@ struct Graph {
 		if ((v = V.find(from)) == V.end()) {
 			v = V.insert(v, {from, new Vertex()});
 		}
-		v->second->E[to] = true;
+		v->second->E.insert(to);
 
 		if ((v = Vpred.find(to)) == Vpred.end()) {
 			v = Vpred.insert(v, {to, new Vertex()});
 		}
-		v->second->E[from] = true;
+		v->second->E.insert(from);
 	}
 
 	void removeEdge(int from, int to) {
@@ -56,37 +59,6 @@ struct Graph {
 		if ((it = Vpred.find(to)) != Vpred.end()) {
 			it->second->E.erase(from);
 		}
-	}
-
-	int singleBFS(int from, int to) {
-		auto Q = std::vector<int>();
-		Q.reserve(32);
-		size_t Qidx = 0;
-		auto visited = Map<int, int>();
-		visited[from] = 0;
-
-		Vertex *v;
-		Q.push_back(from);
-		for (;Qidx < Q.size();) {
-			int vid = Q[Qidx++];
-
-			int newDepth = visited[vid] + 1;
-			v = V[vid];
-			for (const auto &e : v->E) {
-				int k = e.first;
-				if (visited.find(k) == visited.end()) {
-					if (k == to) {
-						return newDepth;
-					}
-					visited[k] = newDepth;
-					if (V.find(k) == V.end()) {
-						continue;
-					}
-					Q.push_back(k);
-				}
-			}
-		}
-		return -1;
 	}
 
 	int biBFS(int from, int to) {
@@ -110,11 +82,12 @@ struct Graph {
 				size_t this_level = QF.size();
 				for (;QFidx < this_level;) {
 					int vid = QF[QFidx++];
+
 					int newDepth = visitedF[vid] + 1;
 
 					v = V[vid];
 					for (const auto& e : v->E) {
-						int k = e.first;
+						int k = e;
 						auto it = visitedF.find(k);
 						if (it == visitedF.end()) {
 							visitedF.insert(it, {k, newDepth});
@@ -138,7 +111,7 @@ struct Graph {
 
 					v = Vpred[vid];
 					for (const auto& e : v->E) {
-						int k = e.first;
+						int k = e;
 						auto it = visitedT.find(k);
 						if (it == visitedT.end()) {
 							visitedT.insert(it, {k, newDepth});
@@ -222,7 +195,8 @@ void runExecution(Graph &G) {
 	std::string line;
 	std::stringstream ss;
 
-	auto start = timer.getChrono();	
+	uint64_t start = timer.getChrono();
+	uint64_t lastEnd = 0;
 	for(;;) {
 		//std::cerr << "reading..." << std::endl;
 		if (!std::getline(std::cin, line)) {
@@ -230,7 +204,9 @@ void runExecution(Graph &G) {
 		}
 		//std::cerr << "read: " << line << std::endl;
 		if (line == "F") {
-			std::cerr << "runExecutionBatch:: " << timer.getChrono(start) << std::endl;
+			uint64_t current = timer.getChrono(start) - lastEnd;
+			lastEnd += current;
+			std::cerr << "runExecutionBatch:: " << current << std::endl;
 			continue;
 		}
 		ss.clear();
