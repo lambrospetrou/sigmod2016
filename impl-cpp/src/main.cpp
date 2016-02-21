@@ -192,7 +192,7 @@ std::unique_ptr<Graph> readInitialGraph() {
 
 	for(;;) {
 		if (!std::getline(std::cin, line)) {
-			std::cerr << "error" << std::cin;
+			std::cerr << "error" << std::endl;
 			break;
 		}
 		if (line == "S") {
