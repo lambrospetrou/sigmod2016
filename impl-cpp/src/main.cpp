@@ -77,6 +77,76 @@ struct Graph {
 		return -1;
 	}
 
+	int biBFS(int from, int to) {
+		auto QF = std::vector<int>(); QF.reserve(64);
+		auto QT = std::vector<int>(); QF.reserve(64);
+
+		auto visitedF = std::unordered_map<int, int>();
+		visitedF[from] = 0;
+		size_t QFidx = 0;
+
+		auto visitedT = std::unordered_map<int, int>();
+		visitedT[to] = 0;
+		size_t QTidx = 0;
+
+		Vertex *v;
+		QF.push_back(from);
+		QT.push_back(to);
+		while (QFidx < QF.size() && QTidx < QT.size()) {
+
+			if ((QF.size()-QFidx) < (QT.size()-QTidx)) {
+				size_t this_level = QF.size();
+				for (;QFidx < this_level;) {
+					int vid = QF[QFidx++];
+					int newDepth = visitedF[vid] + 1;
+
+					v = V[vid];
+					for (const auto& e : v->E) {
+						int k = e.first;
+						auto it = visitedF.find(k);
+						if (it == visitedF.end()) {
+							visitedF.insert(it, {k, newDepth});
+							// required to avoid having vertices that do not exist
+							if (V.find(k) != V.end()) {
+								QF.push_back(k);
+							}
+						}
+						it = visitedT.find(k);
+						if (it != visitedT.end()){
+							//std::cerr << newDepth << ":" << from << ":" << to << " : " << k << std::endl;
+							return it->second + newDepth;
+						}
+					}
+				}
+			} else {
+				size_t this_level = QT.size();
+				for (;QTidx < this_level;) {
+					int vid = QT[QTidx++];
+					int newDepth = visitedT[vid] + 1;
+
+					v = Vpred[vid];
+					for (const auto& e : v->E) {
+						int k = e.first;
+						auto it = visitedT.find(k);
+						if (it == visitedT.end()) {
+							visitedT.insert(it, {k, newDepth});
+							// required to avoid having vertices that do not exist
+							if (Vpred.find(k) != Vpred.end()) {
+								QT.push_back(k);
+							}
+						}
+						it = visitedF.find(k);
+						if (it != visitedF.end()){
+							return it->second + newDepth;
+						}
+					}
+				}
+			}
+
+		}
+		return -1;
+	}
+
 	int BFS(int from, int to) {
 		if (from == to) {
 			return 0;
@@ -87,8 +157,8 @@ struct Graph {
 		if (Vpred.find(to) == Vpred.end()) {
 			return -1;
 		}
-		return singleBFS(from, to);
-		//return biBFS(G, from, to)
+		//return singleBFS(from, to);
+		return biBFS(from, to);
 	}
 };
 
