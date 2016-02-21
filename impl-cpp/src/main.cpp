@@ -175,16 +175,21 @@ std::unique_ptr<Graph> readInitialGraph() {
 	return std::move(G);
 }
 
+uint64_t tQ = 0, tA = 0, tD = 0;
 void executeOperation(Graph &G, char c, int from, int to) {
+	auto start = timer.getChrono();
 	switch (c) {
 	case 'Q':
 		std::cout << G.BFS(from, to) << std::endl;
+		tQ += timer.getChrono(start);
 		break;
 	case 'A':
 		G.addEdge(from, to);
+		tA += timer.getChrono(start);
 		break;
 	case 'D':
 		G.removeEdge(from, to);
+		tD += timer.getChrono(start);
 		break;
 	}
 }
@@ -227,4 +232,6 @@ int main() {
     std::cerr << "readInitialGraph:: " << timer.getChrono(start) << std::endl;
 
     runExecution(*G);
+
+    std::cerr << "tQ: " << tQ << " tA: " << tA << " tD: " << tD << std::endl;
 }
