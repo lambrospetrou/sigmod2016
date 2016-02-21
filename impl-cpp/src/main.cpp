@@ -1,5 +1,8 @@
 #include <Timer.hpp>
 
+#include "include/cpp_btree/btree_map.h"
+#include "include/cpp_btree/btree_set.h"
+
 #include <iostream>
 #include <unordered_map>
 #include <vector>
@@ -10,13 +13,22 @@
 
 cy::Timer_t timer;
 
-using EdgeContainer = std::unordered_map<int, bool>;
+template<typename K, typename V>
+using Map = btree::btree_map<K, V>;
+template<typename K, typename V>
+using Set = btree::btree_set<K, V>;
+
+template<typename T>
+using IntMap = btree::btree_map<int, T>;
+//using IntMap = std::unordered_map<int, T>;
+
+using EdgeContainer = IntMap<bool>;
 
 struct Vertex {
 	EdgeContainer E;
 };
 
-using VertexContainer = std::unordered_map<int, Vertex*>;
+using VertexContainer = IntMap<Vertex*>;
 
 struct Graph {
 	VertexContainer V;
@@ -50,7 +62,7 @@ struct Graph {
 		auto Q = std::vector<int>();
 		Q.reserve(32);
 		size_t Qidx = 0;
-		auto visited = std::unordered_map<int, int>();
+		auto visited = Map<int, int>();
 		visited[from] = 0;
 
 		Vertex *v;
@@ -81,11 +93,11 @@ struct Graph {
 		auto QF = std::vector<int>(); QF.reserve(64);
 		auto QT = std::vector<int>(); QF.reserve(64);
 
-		auto visitedF = std::unordered_map<int, int>();
+		auto visitedF = Map<int, int>();
 		visitedF[from] = 0;
 		size_t QFidx = 0;
 
-		auto visitedT = std::unordered_map<int, int>();
+		auto visitedT = Map<int, int>();
 		visitedT[to] = 0;
 		size_t QTidx = 0;
 
