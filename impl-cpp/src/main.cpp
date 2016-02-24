@@ -76,9 +76,11 @@ struct Graph {
 		Vertex *v;
 		QF.push_back(from);
 		QT.push_back(to);
-		while (QFidx < QF.size() && QTidx < QT.size()) {
 
-			if ((QF.size()-QFidx) < (QT.size()-QTidx)) {
+
+		while (QFidx < QF.size() && QTidx < QT.size()) {
+			//the check now tries to balance visited nodes per BFS
+			if ((QF.size()) < (QT.size())) {
 				size_t this_level = QF.size();
 				for (;QFidx < this_level;) {
 					int vid = QF[QFidx++];
