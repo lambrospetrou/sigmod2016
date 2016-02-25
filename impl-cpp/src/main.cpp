@@ -62,21 +62,21 @@ struct Graph {
 	}
 
 	int biBFS(int from, int to) {
-		auto QF = std::vector<int>(); QF.reserve(64);
-		auto QT = std::vector<int>(); QF.reserve(64);
+		std::vector<int> QF; QF.reserve(128);
+		std::vector<int> QT; QT.reserve(128);
 
-		auto visitedF = Map<int, int>();
+		Map<int, int> visitedF;
+		Map<int, int> visitedT;
+		
 		visitedF[from] = 0;
 		size_t QFidx = 0;
-
-		auto visitedT = Map<int, int>();
+		
 		visitedT[to] = 0;
 		size_t QTidx = 0;
 
 		Vertex *v;
 		QF.push_back(from);
 		QT.push_back(to);
-
 
 		while (QFidx < QF.size() && QTidx < QT.size()) {
 			//the check now tries to balance visited nodes per BFS
