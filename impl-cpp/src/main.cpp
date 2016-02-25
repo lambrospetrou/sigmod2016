@@ -10,6 +10,7 @@
 #include <new>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 cy::Timer_t timer;
 
@@ -29,6 +30,10 @@ using EdgeContainer = IntSet;
 
 struct Vertex {
 	EdgeContainer E;
+	uint32_t hashEdges;
+
+public:
+	Vertex() : hashEdges(0) {}
 };
 
 using VertexContainer = IntMap<Vertex*>;
@@ -36,6 +41,103 @@ using VertexContainer = IntMap<Vertex*>;
 struct Graph {
 	VertexContainer V;
 	VertexContainer Vpred;
+
+	void updateTransitiveClosures() {
+		std::cerr << "V: " << V.size() << std::endl;
+
+		std::vector<std::pair<int, int>> vs; vs.reserve(V.size());
+		for (const auto& vp : V) {
+			vs.push_back({vp.first, vp.second->E.size()});
+		}
+
+		std::sort(vs.begin(), vs.end(), [](std::pair<int, int>& a, std::pair<int, int>& b) {
+			return a.second > b.second;
+		});
+
+		IntMap<uint32_t> hashed;
+
+		for (const auto& vp : vs) {
+			std::cerr << vp.first << ": ";
+			hashed[vp.first] = updateTransitiveClosureHash(vp.first, hashed);
+		}
+	}
+
+	uint32_t updateTransitiveClosureHash(int vid, IntMap<uint32_t>& hashed) {
+		std::vector<int> Q; Q.reserve(32);
+		IntSet visited;
+		visited.insert(vid);
+		Q.push_back(vid);
+		uint64_t Qidx = 0;
+
+		Vertex *v, *vSource = V[vid];
+		int cid;
+		while (Qidx < Q.size()) {
+			cid = Q[Qidx++];
+
+			v = V[cid];
+			for (const auto& k : v->E) {
+				auto it = visited.find(k);
+				if (it == visited.end()) {
+					vSource->hashEdges |= static_cast<uint32_t>(k);
+
+					visited.insert(it, k);
+					// required to avoid having vertices that do not exist
+					if (V.find(k) != V.end()) {
+
+						if (hashed.find(k) != hashed.end()) {
+							vSource->hashEdges |= static_cast<uint32_t>(hashed[k]);
+						} else {
+							Q.push_back(k);
+						}
+					}
+				}
+			}
+		}
+		return vSource->hashEdges;
+	}	
+
+	void updateTransitiveClosureHashFromAdd(int vid) {
+		std::vector<int> Q; Q.reserve(32);
+		IntSet visited;
+		visited.insert(vid);
+		Q.push_back(vid);
+		uint64_t Qidx = 0;
+
+		Vertex *v;
+		int cid;
+		while (Qidx < Q.size()) {
+			cid = Q[Qidx++];
+
+			v = Vpred[cid];
+			for (const auto& k : v->E) {
+				auto it = visited.find(k);
+				if (it == visited.end()) {
+					visited.insert(it, k);
+					// required to avoid having vertices that do not exist
+					VertexContainer::iterator vit = Vpred.find(k);
+					if (vit != Vpred.end()) {
+						Q.push_back(k);
+						vit->second->hashEdges |= static_cast<uint32_t>(vid);
+					}
+				}
+			}
+		}
+	}	
+
+	void addEdgeWithTransitiveClosure(int from, int to) {
+		VertexContainer::iterator v;
+		if ((v = V.find(from)) == V.end()) {
+			v = V.insert(v, {from, new Vertex()});
+		}
+		v->second->E.insert(to);
+
+		if ((v = Vpred.find(to)) == Vpred.end()) {
+			v = Vpred.insert(v, {to, new Vertex()});
+		}
+		v->second->E.insert(from);
+
+		updateTransitiveClosureHashFromAdd(to);
+	}
 
 	void addEdge(int from, int to) {
 		VertexContainer::iterator v;
@@ -140,9 +242,15 @@ struct Graph {
 		if (from == to) {
 			return 0;
 		}
+		VertexContainer::iterator v = V.find(from);
 		if (V.find(from) == V.end()) {
 			return -1;
 		}
+
+		if (to > 0 && ((v->second->hashEdges & static_cast<uint32_t>(to)) == 0)) {
+			return -1;
+		}
+
 		if (Vpred.find(to) == Vpred.end()) {
 			return -1;
 		}
@@ -174,6 +282,11 @@ std::unique_ptr<Graph> readInitialGraph() {
 
 		G->addEdge(from, to);
 	}
+
+	// update the transitive closures
+	G->updateTransitiveClosures();
+	std::cerr << "finished transitive closure:: " << timer.getChrono(start) << std::endl;
+
 	std::cout << "R\n";
 
 	return std::move(G);
@@ -188,7 +301,7 @@ void executeOperation(Graph &G, char c, int from, int to) {
 		tQ += timer.getChrono(start);
 		break;
 	case 'A':
-		G.addEdge(from, to);
+		G.addEdgeWithTransitiveClosure(from, to);
 		tA += timer.getChrono(start);
 		break;
 	case 'D':
